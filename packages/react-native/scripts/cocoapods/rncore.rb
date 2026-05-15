@@ -6,6 +6,7 @@
 require 'json'
 require 'net/http'
 require 'rexml/document'
+require 'digest'
 
 require_relative './utils.rb'
 
@@ -409,6 +410,27 @@ class ReactNativeCoreUtils
         return File.join(Dir.home, "Library", "Caches", "ReactNative")
     end
 
+    def self.fetch_maven_sha1(tarball_url)
+        sha1 = `curl -sL "#{tarball_url}.sha1"`.strip
+        return sha1.downcase if $?.success? && sha1.match?(/\A[a-fA-F0-9]{40}\z/)
+        nil
+    end
+
+    def self.validate_tarball(path, tarball_url)
+        expected_sha1 = fetch_maven_sha1(tarball_url)
+        if expected_sha1.nil?
+          rncore_log("SHA1 not available from Maven for #{File.basename(path)}. Skipping validation.")
+          return true
+        end
+        actual_sha1 = Digest::SHA1.file(path).hexdigest
+        if actual_sha1 == expected_sha1
+          rncore_log("SHA1 verified for #{File.basename(path)}")
+          return true
+        end
+        rncore_log("SHA1 mismatch for #{File.basename(path)}: expected #{expected_sha1}, got #{actual_sha1}", :error)
+        return false
+    end
+
     def self.download_rncore_tarball(react_native_path, tarball_url, version, configuration, dsyms = false)
         filename = configuration == nil ?
             "reactnative-core-#{version}#{dsyms ? "-dSYM" : ""}.tar.gz" :
@@ -423,18 +445,26 @@ class ReactNativeCoreUtils
         `mkdir -p "#{artifacts_dir()}"`
 
         cached_path = File.join(shared_cache_dir(), filename)
-        if File.exist?(cached_path)
+        if File.exist?(cached_path) && validate_tarball(cached_path, tarball_url)
           rncore_log("Cache hit: copying #{filename} from shared cache (#{shared_cache_dir()})")
           FileUtils.cp(cached_path, destination_path)
         else
-          rncore_log("Cache miss: downloading #{filename} from #{tarball_url}")
+          if File.exist?(cached_path)
+            rncore_log("Shared cache file #{filename} failed SHA verification. Re-downloading.")
+          else
+            rncore_log("Cache miss: downloading #{filename} from #{tarball_url}")
+          end
           # Download to a temporary file first so we don't cache incomplete downloads.
           tmp_file = "#{artifacts_dir()}/reactnative-core.download"
           `curl "#{tarball_url}" -Lo "#{tmp_file}" && mv "#{tmp_file}" "#{destination_path}"`
-          # Save to shared cache for future use
-          `mkdir -p "#{shared_cache_dir()}"`
-          FileUtils.cp(destination_path, cached_path)
-          rncore_log("Saved #{filename} to shared cache (#{shared_cache_dir()})")
+          if validate_tarball(destination_path, tarball_url)
+            # Save to shared cache for future use
+            `mkdir -p "#{shared_cache_dir()}"`
+            FileUtils.cp(destination_path, cached_path)
+            rncore_log("Saved #{filename} to shared cache (#{shared_cache_dir()})")
+          else
+            rncore_log("Downloaded file #{filename} failed SHA verification!", :error)
+          end
         end
 
         return destination_path
