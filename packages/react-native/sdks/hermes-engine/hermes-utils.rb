@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-require 'digest'
+require_relative '../../scripts/cocoapods/utils'
 
 HERMES_GITHUB_URL = "https://github.com/facebook/hermes.git"
 ENV_BUILD_FROM_SOURCE = "RCT_BUILD_HERMES_FROM_SOURCE"
@@ -208,31 +208,6 @@ def download_stable_hermes(react_native_path, version, configuration)
     download_hermes_tarball(react_native_path, tarball_url, version, configuration)
 end
 
-def shared_cache_dir()
-    return File.join(Dir.home, "Library", "Caches", "ReactNative")
-end
-
-def fetch_maven_sha1(tarball_url)
-    sha1 = `curl -sL "#{tarball_url}.sha1"`.strip
-    return sha1.downcase if $?.success? && sha1.match?(/\A[a-fA-F0-9]{40}\z/)
-    nil
-end
-
-def validate_tarball(path, tarball_url)
-    expected_sha1 = fetch_maven_sha1(tarball_url)
-    if expected_sha1.nil?
-      hermes_log("SHA1 not available from Maven for #{File.basename(path)}. Skipping validation.", :info)
-      return true
-    end
-    actual_sha1 = Digest::SHA1.file(path).hexdigest
-    if actual_sha1 == expected_sha1
-      hermes_log("SHA1 verified for #{File.basename(path)}", :info)
-      return true
-    end
-    hermes_log("SHA1 mismatch for #{File.basename(path)}: expected #{expected_sha1}, got #{actual_sha1}", :error)
-    return false
-end
-
 def download_hermes_tarball(react_native_path, tarball_url, version, configuration)
     filename = configuration == nil ?
         "hermes-ios-#{version}.tar.gz" :
@@ -246,9 +221,9 @@ def download_hermes_tarball(react_native_path, tarball_url, version, configurati
 
     `mkdir -p "#{artifacts_dir()}"`
 
-    cached_path = File.join(shared_cache_dir(), filename)
-    if File.exist?(cached_path) && validate_tarball(cached_path, tarball_url)
-      hermes_log("Cache hit: copying #{filename} from shared cache (#{shared_cache_dir()})", :info)
+    cached_path = File.join(ReactNativePodsUtils.shared_cache_dir(), filename)
+    if File.exist?(cached_path) && ReactNativePodsUtils.validate_tarball(cached_path, tarball_url)
+      hermes_log("Cache hit: copying #{filename} from shared cache (#{ReactNativePodsUtils.shared_cache_dir()})", :info)
       FileUtils.cp(cached_path, destination_path)
     else
       if File.exist?(cached_path)
@@ -259,11 +234,11 @@ def download_hermes_tarball(react_native_path, tarball_url, version, configurati
       # Download to a temporary file first so we don't cache incomplete downloads.
       tmp_file = "#{artifacts_dir()}/hermes-ios.download"
       `curl "#{tarball_url}" -Lo "#{tmp_file}" && mv "#{tmp_file}" "#{destination_path}"`
-      if validate_tarball(destination_path, tarball_url)
+      if ReactNativePodsUtils.validate_tarball(destination_path, tarball_url)
         # Save to shared cache for future use
-        `mkdir -p "#{shared_cache_dir()}"`
+        `mkdir -p "#{ReactNativePodsUtils.shared_cache_dir()}"`
         FileUtils.cp(destination_path, cached_path)
-        hermes_log("Saved #{filename} to shared cache (#{shared_cache_dir()})", :info)
+        hermes_log("Saved #{filename} to shared cache (#{ReactNativePodsUtils.shared_cache_dir()})", :info)
       else
         hermes_log("Downloaded file #{filename} failed SHA verification!", :error)
       end
