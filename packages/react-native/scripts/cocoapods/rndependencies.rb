@@ -245,18 +245,29 @@ class ReactNativeDependenciesUtils
         `mkdir -p "#{artifacts_dir()}"`
 
         cached_path = File.join(ReactNativePodsUtils.shared_cache_dir(), filename)
-        if File.exist?(cached_path) && ReactNativePodsUtils.validate_tarball(cached_path, tarball_url)
-          rndeps_log("Cache hit: copying #{filename} from shared cache (#{ReactNativePodsUtils.shared_cache_dir()})")
-          FileUtils.cp(cached_path, destination_path)
-        else
-          if File.exist?(cached_path)
-            rndeps_log("Shared cache file #{filename} failed SHA verification. Re-downloading.")
+        if File.exist?(cached_path)
+          rndeps_log("Verifying checksum for cached #{filename}...")
+          if ReactNativePodsUtils.validate_tarball(cached_path, tarball_url)
+            rndeps_log("Cache hit: copying #{filename} from shared cache (#{ReactNativePodsUtils.shared_cache_dir()})")
+            FileUtils.cp(cached_path, destination_path)
           else
-            rndeps_log("Cache miss: downloading #{filename} from #{tarball_url}")
+            rndeps_log("Shared cache file #{filename} failed SHA verification. Re-downloading.")
+            tmp_file = "#{artifacts_dir()}/reactnative-dependencies.download"
+            `curl "#{tarball_url}" -Lo "#{tmp_file}" && mv "#{tmp_file}" "#{destination_path}"`
+            rndeps_log("Verifying checksum for downloaded #{filename}...")
+            if ReactNativePodsUtils.validate_tarball(destination_path, tarball_url)
+              FileUtils.cp(destination_path, cached_path)
+              rndeps_log("Saved #{filename} to shared cache (#{ReactNativePodsUtils.shared_cache_dir()})")
+            else
+              rndeps_log("Downloaded file #{filename} failed SHA verification!", :error)
+            end
           end
+        else
+          rndeps_log("Cache miss: downloading #{filename} from #{tarball_url}")
           # Download to a temporary file first so we don't cache incomplete downloads.
           tmp_file = "#{artifacts_dir()}/reactnative-dependencies.download"
           `curl "#{tarball_url}" -Lo "#{tmp_file}" && mv "#{tmp_file}" "#{destination_path}"`
+          rndeps_log("Verifying checksum for downloaded #{filename}...")
           if ReactNativePodsUtils.validate_tarball(destination_path, tarball_url)
             # Save to shared cache for future use
             `mkdir -p "#{ReactNativePodsUtils.shared_cache_dir()}"`
