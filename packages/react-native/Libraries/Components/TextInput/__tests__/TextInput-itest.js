@@ -41,6 +41,43 @@ describe('<TextInput>', () => {
       });
     });
 
+    describe('onEditMenuItemPress', () => {
+      it('delivers consecutive custom actions with their native selection snapshots', () => {
+        const root = Fantom.createRoot();
+        const nodeRef = createRef<HostInstance>();
+        const onPress = jest.fn();
+        const onChangeText = jest.fn();
+        Fantom.runTask(() => {
+          root.render(
+            <TextInput
+              ref={nodeRef}
+              editMenuItems={[
+                {id: 'quote', title: 'Quote'},
+                {id: 'translate', title: 'Translate'},
+              ]}
+              onEditMenuItemPress={event => onPress(event.nativeEvent)}
+              onChangeText={onChangeText}
+            />,
+          );
+        });
+        const first = {
+          id: 'quote',
+          text: 'A😀B',
+          selection: {start: 1, end: 3},
+          eventCount: 7,
+          target: 1,
+        };
+        const second = {...first, id: 'translate'};
+        Fantom.runOnUIThread(() => {
+          Fantom.enqueueNativeEvent(nodeRef, 'editMenuItemPress', first);
+          Fantom.enqueueNativeEvent(nodeRef, 'editMenuItemPress', second);
+        });
+        Fantom.runWorkLoop();
+        expect(onPress.mock.calls).toEqual([[first], [second]]);
+        expect(onChangeText).not.toHaveBeenCalled();
+      });
+    });
+
     describe('onChange', () => {
       it('is called when the change native event is dispatched', () => {
         const root = Fantom.createRoot();

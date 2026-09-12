@@ -21,14 +21,17 @@ import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextUtils
 import android.util.DisplayMetrics
+import android.view.ActionMode
 import android.view.Gravity
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.widget.PopupMenu
 import androidx.annotation.RequiresApi
 import androidx.autofill.HintConstants
 import androidx.core.content.res.ResourcesCompat.ID_NULL
 import com.facebook.react.bridge.BridgeReactContext
 import com.facebook.react.bridge.CatalystInstance
+import com.facebook.react.bridge.JavaOnlyArray
 import com.facebook.react.bridge.JavaOnlyMap
 import com.facebook.react.bridge.ReactTestHelper.createMockCatalystInstance
 import com.facebook.react.internal.featureflags.ReactNativeFeatureFlagsForTests
@@ -42,6 +45,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.kotlin.mock
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 
@@ -75,6 +79,62 @@ class ReactTextInputPropertyTest {
     manager = ReactTextInputManager()
     DisplayMetricsHolder.setScreenDisplayMetrics(DisplayMetrics())
     view = manager.createViewInstance(themedContext)
+  }
+
+  @Test
+  fun testEditMenuItemsValidationAndRemoval() {
+    manager.setEditMenuItems(
+        view,
+        JavaOnlyArray.of(
+            null,
+            "invalid",
+            JavaOnlyMap.of("id", 1, "title", "Invalid"),
+            JavaOnlyMap.of("id", "quote"),
+            JavaOnlyMap.of("id", "quote", "title", " "),
+            JavaOnlyMap.of("id", "quote", "title", "Quote"),
+            JavaOnlyMap.of("id", "quote", "title", "Duplicate"),
+        ),
+    )
+    assertThat(view.editMenu.items).containsExactly(ReactTextInputEditMenu.Item("quote", "Quote"))
+    manager.setEditMenuItems(view, null)
+    assertThat(view.editMenu.items).isEmpty()
+  }
+
+  @Test
+  fun testEditMenuSuppressesHiddenDisabledAndPasswordInputs() {
+    manager.setEditMenuItems(
+        view,
+        JavaOnlyArray.of(JavaOnlyMap.of("id", "quote", "title", "Quote")),
+    )
+    view.setText("Select me")
+    view.setSelection(0, 6)
+    val menu = PopupMenu(themedContext, view).menu
+    val mode = mock<ActionMode>()
+    val callback = checkNotNull(view.customSelectionActionModeCallback)
+    callback.onPrepareActionMode(mode, menu)
+    assertThat(menu.size()).isEqualTo(1)
+
+    manager.setContextMenuHidden(view, true)
+    callback.onPrepareActionMode(mode, menu)
+    assertThat(menu.size()).isZero()
+    manager.setContextMenuHidden(view, false)
+    manager.setEditable(view, false)
+    callback.onPrepareActionMode(mode, menu)
+    assertThat(menu.size()).isZero()
+    manager.setEditable(view, true)
+
+    for (type in
+        listOf(
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD,
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD,
+            InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD,
+        )) {
+      view.inputType = type
+      view.setSelection(0, 6)
+      callback.onPrepareActionMode(mode, menu)
+      assertThat(menu.size()).isZero()
+    }
   }
 
   @Test

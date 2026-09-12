@@ -54,3 +54,31 @@ describe('Apple TextInput view config', () => {
     });
   });
 });
+
+for (const [platform, attributes] of [
+  ['Android', androidValidAttributes],
+  ['Apple', appleValidAttributes],
+]) {
+  describe(`${platform} edit menu items`, () => {
+    it('filters invalid and duplicate actions at the native boundary', () => {
+      expect(
+        create(
+          {
+            editMenuItems: [
+              {id: 'quote', title: 'Quote'},
+              {id: 'quote', title: 'Duplicate'},
+              {id: '', title: 'Invalid'},
+            ],
+          },
+          attributes,
+        ),
+      ).toEqual({editMenuItems: [{id: 'quote', title: 'Quote'}]});
+    });
+
+    it('preserves an explicit empty menu', () => {
+      expect(create({editMenuItems: []}, attributes)).toEqual({
+        editMenuItems: [],
+      });
+    });
+  });
+}

@@ -9,7 +9,16 @@
 
 #include <react/cxxstableapi/FrameworksGuard.h>
 
+#include <string>
+
 namespace facebook::react {
+
+struct TextInputEditMenuItem {
+  std::string id;
+  std::string title;
+
+  bool operator==(const TextInputEditMenuItem &other) const = default;
+};
 
 enum class SubmitBehavior {
   Default,

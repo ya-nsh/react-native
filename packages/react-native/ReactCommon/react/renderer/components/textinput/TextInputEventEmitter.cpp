@@ -175,6 +175,19 @@ void TextInputEventEmitter::onKeyPress(
   });
 }
 
+void TextInputEventEmitter::onEditMenuItemPress(
+    const std::string& id,
+    const Metrics& textInputMetrics) const {
+  dispatchEvent(
+      "editMenuItemPress", [id, textInputMetrics](jsi::Runtime& runtime) {
+        auto payload = textInputMetricsPayload(runtime, textInputMetrics, true)
+                           .asObject(runtime);
+        payload.setProperty(
+            runtime, "id", jsi::String::createFromUtf8(runtime, id));
+        return payload;
+      });
+}
+
 void TextInputEventEmitter::onScroll(const Metrics& textInputMetrics) const {
   dispatchEvent("scroll", [textInputMetrics](jsi::Runtime& runtime) {
     return textInputMetricsScrollPayload(runtime, textInputMetrics);

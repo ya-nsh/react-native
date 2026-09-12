@@ -17,6 +17,7 @@ import RNTesterButton from '../../components/RNTesterButton';
 import RNTesterText from '../../components/RNTesterText';
 import {RNTesterThemeContext} from '../../components/RNTesterTheme';
 import ExampleTextInput from './ExampleTextInput';
+import TextInputEditMenuExample from './TextInputEditMenuExample';
 import * as React from 'react';
 import {createRef, memo, useContext, useState} from 'react';
 import {
@@ -924,6 +925,13 @@ function AutogrowingTextInputExample({
 }
 
 module.exports = [
+  {
+    title: 'Custom text selection menu',
+    name: 'edit-menu-actions',
+    description:
+      'App-defined selection actions with native text and UTF-16 ranges.',
+    render: TextInputEditMenuExample,
+  },
   {
     title: 'Auto-focus & select text on focus',
     render: function (): React.Node {

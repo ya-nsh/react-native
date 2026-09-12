@@ -129,6 +129,12 @@ BaseTextInputProps::BaseTextInputProps(
           "disableKeyboardShortcuts",
           sourceProps.disableKeyboardShortcuts,
           {false})),
+      editMenuItems(convertRawProp(
+          context,
+          rawProps,
+          "editMenuItems",
+          sourceProps.editMenuItems,
+          {})),
       acceptDragAndDropTypes(convertRawProp(
           context,
           rawProps,
@@ -224,6 +230,7 @@ void BaseTextInputProps::setProp(
     RAW_SET_PROP_SWITCH_CASE_BASIC(multiline);
     RAW_SET_PROP_SWITCH_CASE_BASIC(disableKeyboardShortcuts);
     RAW_SET_PROP_SWITCH_CASE_BASIC(acceptDragAndDropTypes);
+    RAW_SET_PROP_SWITCH_CASE_BASIC(editMenuItems);
   }
 }
 

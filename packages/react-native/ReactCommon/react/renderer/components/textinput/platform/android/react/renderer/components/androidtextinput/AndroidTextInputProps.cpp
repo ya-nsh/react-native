@@ -309,6 +309,7 @@ folly::dynamic AndroidTextInputProps::getDynamic() const {
   props["submitBehavior"] = toDynamic(submitBehavior);
   props["caretHidden"] = caretHidden;
   props["contextMenuHidden"] = contextMenuHidden;
+  props["editMenuItems"] = toDynamic(editMenuItems);
   props["textShadowColor"] = toAndroidRepr(textShadowColor);
   props["textShadowRadius"] = textShadowRadius;
   props["textDecorationLine"] = textDecorationLine;
@@ -489,6 +490,10 @@ folly::dynamic AndroidTextInputProps::getDiffProps(
 
   if (disableKeyboardShortcuts != oldProps->disableKeyboardShortcuts) {
     result["disableKeyboardShortcuts"] = disableKeyboardShortcuts;
+  }
+
+  if (editMenuItems != oldProps->editMenuItems) {
+    result["editMenuItems"] = toDynamic(editMenuItems);
   }
 
   if (acceptDragAndDropTypes != oldProps->acceptDragAndDropTypes) {

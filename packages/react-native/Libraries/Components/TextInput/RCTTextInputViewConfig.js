@@ -15,6 +15,7 @@ import {
   colorAttribute,
   fontVariationSettingsAttribute,
 } from '../View/ReactNativeStyleAttributes';
+import processEditMenuItems from './processEditMenuItems';
 
 type PartialViewConfigWithoutName = Omit<PartialViewConfig, 'uiViewClassName'>;
 
@@ -77,6 +78,9 @@ const RCTTextInputViewConfig: PartialViewConfigWithoutName = {
     },
   },
   directEventTypes: {
+    topEditMenuItemPress: {
+      registrationName: 'onEditMenuItemPress',
+    },
     topScroll: {
       registrationName: 'onScroll',
     },
@@ -135,6 +139,7 @@ const RCTTextInputViewConfig: PartialViewConfigWithoutName = {
     scrollEnabled: true,
     selectionColor: colorAttribute,
     contextMenuHidden: true,
+    editMenuItems: {process: processEditMenuItems},
     secureTextEntry: true,
     placeholder: true,
     autoCorrect: true,
@@ -155,6 +160,7 @@ const RCTTextInputViewConfig: PartialViewConfigWithoutName = {
     lineBreakModeIOS: true,
     smartInsertDelete: true,
     ...ConditionallyIgnoredEventHandlers({
+      onEditMenuItemPress: true,
       onChange: true,
       onSelectionChange: true,
       onContentSizeChange: true,

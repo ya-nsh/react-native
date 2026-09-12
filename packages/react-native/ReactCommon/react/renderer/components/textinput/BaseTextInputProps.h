@@ -81,6 +81,8 @@ class BaseTextInputProps : public ViewProps, public BaseTextProps {
 
   bool disableKeyboardShortcuts{false};
 
+  std::vector<TextInputEditMenuItem> editMenuItems{};
+
   std::optional<std::vector<std::string>> acceptDragAndDropTypes{};
 };
 

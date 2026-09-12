@@ -164,6 +164,8 @@ export type {
   TextInputProps,
   TextInputBlurEvent,
   TextInputChangeEvent,
+  TextInputEditMenuItem,
+  TextInputEditMenuItemPressEvent,
   TextInputContentSizeChangeEvent,
   TextInputEndEditingEvent,
   TextInputFocusEvent,

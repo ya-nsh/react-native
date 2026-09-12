@@ -11,6 +11,7 @@
 
 #import <React/RCTBackedTextInputViewProtocol.h>
 #import <react/renderer/components/iostextinput/primitives.h>
+#import <react/renderer/components/textinput/basePrimitives.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -42,6 +43,15 @@ UITextInputPasswordRules *RCTUITextInputPasswordRulesFromString(const std::strin
 UITextSmartInsertDeleteType RCTUITextSmartInsertDeleteTypeFromOptionalBool(std::optional<bool> smartInsertDelete);
 
 #if !TARGET_OS_TV
+/** Returns nil to preserve UIKit's default menu when no custom actions apply. */
+UIMenu *_Nullable RCTCreateTextInputEditMenu(
+    UIView<RCTBackedTextInputViewProtocol> *textInput,
+    NSRange range,
+    NSArray<UIMenuElement *> *suggestedActions,
+    const std::vector<facebook::react::TextInputEditMenuItem> &items,
+    BOOL (^isCurrentMenu)(void),
+    void (^onPress)(NSString *actionId, NSString *text, NSRange selection));
+
 UIDataDetectorTypes RCTUITextViewDataDetectorTypesFromStringVector(const std::vector<std::string> &dataDetectorTypes);
 #endif
 

@@ -47,6 +47,7 @@ static NSSet<NSNumber *> *returnKeyTypesSet;
   TextInputShadowNode::ConcreteState::Shared _state;
   UIView<RCTBackedTextInputViewProtocol> *_backedTextInputView;
   NSUInteger _mostRecentEventCount;
+  NSUInteger _editMenuGeneration;
   NSAttributedString *_lastStringStateWasUpdatedWith;
 
   /*
@@ -121,6 +122,9 @@ static NSSet<NSNumber *> *returnKeyTypesSet;
 - (void)didMoveToWindow
 {
   [super didMoveToWindow];
+  if (!self.window) {
+    _editMenuGeneration++;
+  }
 
   if (self.window && !_didMoveToWindow) {
     const auto &props = static_cast<const TextInputProps &>(*_props);
@@ -326,6 +330,13 @@ static NSSet<NSNumber *> *returnKeyTypesSet;
     _backedTextInputView.disableKeyboardShortcuts = newTextInputProps.disableKeyboardShortcuts;
   }
 
+  if (newTextInputProps.editMenuItems != oldTextInputProps.editMenuItems ||
+      newTextInputProps.traits.contextMenuHidden != oldTextInputProps.traits.contextMenuHidden ||
+      newTextInputProps.traits.secureTextEntry != oldTextInputProps.traits.secureTextEntry ||
+      newTextInputProps.multiline != oldTextInputProps.multiline) {
+    _editMenuGeneration++;
+  }
+
   if (newTextInputProps.acceptDragAndDropTypes != oldTextInputProps.acceptDragAndDropTypes) {
     if (!newTextInputProps.acceptDragAndDropTypes.has_value()) {
       _backedTextInputView.acceptDragAndDropTypes = nil;
@@ -385,6 +396,7 @@ static NSSet<NSNumber *> *returnKeyTypesSet;
 
 - (void)prepareForRecycle
 {
+  _editMenuGeneration++;
   [super prepareForRecycle];
   _state.reset();
   _backedTextInputView.attributedText = nil;
@@ -400,6 +412,43 @@ static NSSet<NSNumber *> *returnKeyTypesSet;
 }
 
 #pragma mark - RCTBackedTextInputDelegate
+
+#if !TARGET_OS_TV
+- (UIMenu *)textInput:(UIView<RCTBackedTextInputViewProtocol> *)textInput
+    editMenuForCharactersInRange:(NSRange)range
+                suggestedActions:(NSArray<UIMenuElement *> *)suggestedActions
+{
+  if (textInput != _backedTextInputView) {
+    return nil;
+  }
+  const auto &props = static_cast<const TextInputProps &>(*_props);
+  NSUInteger generation = ++_editMenuGeneration;
+  __weak RCTTextInputComponentView *weakSelf = self;
+  return RCTCreateTextInputEditMenu(
+      textInput,
+      range,
+      suggestedActions,
+      props.editMenuItems,
+      ^BOOL {
+        RCTTextInputComponentView *strongSelf = weakSelf;
+        return strongSelf && strongSelf->_editMenuGeneration == generation;
+      },
+      ^(NSString *actionId, NSString *text, NSRange selection) {
+        RCTTextInputComponentView *strongSelf = weakSelf;
+        if (!strongSelf || !strongSelf->_eventEmitter) {
+          return;
+        }
+        // A menu action is discrete and must never advance the text edit counter.
+        strongSelf->_editMenuGeneration++;
+        auto metrics = [strongSelf _textInputMetrics];
+        metrics.text = RCTStringFromNSString(text);
+        metrics.selectionRange = {.location = (int)selection.location, .length = (int)selection.length};
+        metrics.target = strongSelf.tag;
+        static_cast<const TextInputEventEmitter &>(*strongSelf->_eventEmitter)
+            .onEditMenuItemPress(RCTStringFromNSString(actionId), metrics);
+      });
+}
+#endif
 
 - (BOOL)textInputShouldBeginEditing
 {
@@ -420,6 +469,7 @@ static NSSet<NSNumber *> *returnKeyTypesSet;
 
 - (void)textInputDidEndEditing
 {
+  _editMenuGeneration++;
   if (_eventEmitter) {
     static_cast<const TextInputEventEmitter &>(*_eventEmitter).onEndEditing([self _textInputMetrics]);
     static_cast<const TextInputEventEmitter &>(*_eventEmitter).onBlur([self _textInputMetrics]);

@@ -52,6 +52,21 @@ static void *TextFieldSelectionObservingContext = &TextFieldSelectionObservingCo
   [_backedTextInputView removeTarget:self action:nil forControlEvents:UIControlEventEditingDidEndOnExit];
 }
 
+#if !TARGET_OS_TV
+- (UIMenu *)textField:(__unused UITextField *)textField
+    editMenuForCharactersInRange:(NSRange)range
+                suggestedActions:(NSArray<UIMenuElement *> *)suggestedActions
+{
+  if ([_backedTextInputView.textInputDelegate respondsToSelector:@selector(textInput:
+                                                                     editMenuForCharactersInRange:suggestedActions:)]) {
+    return [_backedTextInputView.textInputDelegate textInput:_backedTextInputView
+                                editMenuForCharactersInRange:range
+                                            suggestedActions:suggestedActions];
+  }
+  return nil;
+}
+#endif
+
 #pragma mark - UITextFieldDelegate
 
 - (BOOL)textFieldShouldBeginEditing:(__unused UITextField *)textField
@@ -250,6 +265,21 @@ static void *TextFieldSelectionObservingContext = &TextFieldSelectionObservingCo
 
   return self;
 }
+
+#if !TARGET_OS_TV
+- (UIMenu *)textView:(__unused UITextView *)textView
+    editMenuForTextInRange:(NSRange)range
+          suggestedActions:(NSArray<UIMenuElement *> *)suggestedActions
+{
+  if ([_backedTextInputView.textInputDelegate respondsToSelector:@selector(textInput:
+                                                                     editMenuForCharactersInRange:suggestedActions:)]) {
+    return [_backedTextInputView.textInputDelegate textInput:_backedTextInputView
+                                editMenuForCharactersInRange:range
+                                            suggestedActions:suggestedActions];
+  }
+  return nil;
+}
+#endif
 
 #pragma mark - UITextViewDelegate
 

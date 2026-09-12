@@ -73,6 +73,23 @@ type DataDetectorTypes =
 
 export type SubmitBehavior = 'submit' | 'blurAndSubmit' | 'newline';
 
+/** An app-defined action appended to the native text selection menu. */
+export type TextInputEditMenuItem = Readonly<{
+  id: string;
+  title: string;
+}>;
+
+/** The native text and UTF-16 selection when a custom menu action is activated. */
+export type TextInputEditMenuItemPressEvent = NativeSyntheticEvent<
+  Readonly<{
+    id: string;
+    text: string;
+    selection: Readonly<{start: number; end: number}>;
+    eventCount: number;
+    target: number;
+  }>
+>;
+
 /**
  * DocumentSelectionState is responsible for maintaining selection information
  * for a document.
@@ -769,6 +786,20 @@ export interface TextInputProps
    * If true, context menu is hidden. The default value is false.
    */
   contextMenuHidden?: boolean | undefined;
+
+  /**
+   * Appends actions to the system selection menu on Android and iOS 16+.
+   * Requires a non-empty selection. Secure inputs and hidden menus suppress
+   * custom actions. Invalid entries and subsequent duplicate IDs are ignored.
+   */
+  editMenuItems?: ReadonlyArray<TextInputEditMenuItem> | null | undefined;
+
+  /**
+   * Receives the native text and UTF-16 selection when a custom action is
+   * activated. The action does not edit text or advance the onChange counter.
+   */
+  onEditMenuItemPress?:
+    ((event: TextInputEditMenuItemPressEvent) => unknown) | null | undefined;
 
   /**
    * Provides an initial value that will change when the user starts typing.

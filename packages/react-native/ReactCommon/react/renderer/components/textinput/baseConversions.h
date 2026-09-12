@@ -12,9 +12,27 @@
 #include <react/renderer/components/textinput/basePrimitives.h>
 #include <react/renderer/core/PropsParserContext.h>
 #include <react/renderer/core/RawValue.h>
+#include <react/renderer/core/propsConversions.h>
 #include <string>
+#include <unordered_map>
 
 namespace facebook::react {
+
+inline void fromRawValue(const PropsParserContext &context, const RawValue &value, TextInputEditMenuItem &result)
+{
+  const auto map = static_cast<std::unordered_map<std::string, RawValue>>(value);
+  if (auto it = map.find("id"); it != map.end()) {
+    fromRawValue(context, it->second, result.id);
+  }
+  if (auto it = map.find("title"); it != map.end()) {
+    fromRawValue(context, it->second, result.title);
+  }
+}
+
+inline folly::dynamic toDynamic(const TextInputEditMenuItem &value)
+{
+  return folly::dynamic::object("id", value.id)("title", value.title);
+}
 
 inline void fromRawValue(const PropsParserContext & /*context*/, const RawValue &value, SubmitBehavior &result)
 {

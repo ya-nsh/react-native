@@ -96,6 +96,25 @@ type TextInputSelectionChangeEventData = Readonly<{
 export type TextInputSelectionChangeEvent =
   NativeSyntheticEvent<TextInputSelectionChangeEventData>;
 
+/** An app-defined action appended to the native text selection menu. */
+export type TextInputEditMenuItem = Readonly<{
+  /** A non-empty identifier, unique within this input's menu. */
+  id: string,
+  /** The localized, non-empty label displayed in the menu. */
+  title: string,
+}>;
+
+/** The text and selection at the time a custom menu action is activated. */
+export type TextInputEditMenuItemPressEvent = NativeSyntheticEvent<
+  Readonly<{
+    id: string,
+    text: string,
+    selection: Selection,
+    eventCount: number,
+    target: number,
+  }>,
+>;
+
 type TextInputKeyPressEventData = Readonly<{
   ...TargetEvent,
   key: string,
@@ -710,6 +729,29 @@ type TextInputBaseProps = Readonly<{
    * If `true`, contextMenuHidden is hidden. The default value is `false`.
    */
   contextMenuHidden?: ?boolean,
+
+  /**
+   * Appends custom actions to the system text selection menu. Requires a
+   * non-empty selection and is disabled by `contextMenuHidden` and
+   * `secureTextEntry`. Supported on Android and iOS 16 and later.
+   *
+   * Items must have unique, non-empty IDs and non-empty localized titles.
+   * Invalid items and subsequent duplicate IDs are ignored. Changes take
+   * effect the next time the menu is prepared; outdated actions are ignored.
+   */
+  editMenuItems?: ?ReadonlyArray<TextInputEditMenuItem>,
+
+  /**
+   * Called when a custom selection-menu action is activated. `text` is the
+   * full native text; `selection.start` and `selection.end` are UTF-16 offsets
+   * into that text, compatible with JavaScript's `slice`. `eventCount` uses
+   * the same counter as `onChange` and does not advance for menu actions.
+   *
+   * The action does not edit text or request a focus change. System menu actions
+   * do not call this callback. Use the event's text rather than a potentially
+   * stale controlled `value` when processing the selection.
+   */
+  onEditMenuItemPress?: ?(event: TextInputEditMenuItemPressEvent) => unknown,
 
   /**
    * Provides an initial value that will change when the user starts typing.

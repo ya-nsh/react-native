@@ -302,3 +302,69 @@ UIDataDetectorTypes RCTUITextViewDataDetectorTypesFromStringVector(const std::ve
   return ret;
 }
 #endif
+
+#if !TARGET_OS_TV
+UIMenu *RCTCreateTextInputEditMenu(
+    UIView<RCTBackedTextInputViewProtocol> *textInput,
+    NSRange range,
+    NSArray<UIMenuElement *> *suggestedActions,
+    const std::vector<facebook::react::TextInputEditMenuItem> &items,
+    BOOL (^isCurrentMenu)(void),
+    void (^onPress)(NSString *actionId, NSString *text, NSRange selection))
+{
+  NSString *text = [textInput.attributedText.string copy];
+  // Check by subtraction so malformed ranges cannot overflow NSMaxRange.
+  if (items.empty() || textInput.contextMenuHidden || textInput.secureTextEntry || range.length == 0 ||
+      range.location > text.length || range.length > text.length - range.location) {
+    return nil;
+  }
+
+  __weak UIView<RCTBackedTextInputViewProtocol> *weakTextInput = textInput;
+  NSMutableArray<UIMenuElement *> *actions = [NSMutableArray new];
+  NSMutableSet<NSString *> *ids = [NSMutableSet new];
+  for (const auto &item : items) {
+    NSString *actionId = RCTNSStringFromString(item.id);
+    NSString *title = RCTNSStringFromString(item.title);
+    if (actionId.length == 0 || title.length == 0 || [ids containsObject:actionId]) {
+      continue;
+    }
+    [ids addObject:actionId];
+    UIAction *action = [UIAction
+        actionWithTitle:title
+                  image:nil
+             identifier:nil
+                handler:^(__unused UIAction *sender) {
+                  UIView<RCTBackedTextInputViewProtocol> *input = weakTextInput;
+                  if (!input || !input.window || !input.isFirstResponder || input.contextMenuHidden ||
+                      input.secureTextEntry || !isCurrentMenu() ||
+                      ![input.attributedText.string isEqualToString:text]) {
+                    return;
+                  }
+                  UITextRange *selection = input.selectedTextRange;
+                  if (!selection) {
+                    return;
+                  }
+                  NSInteger start = [input offsetFromPosition:input.beginningOfDocument toPosition:selection.start];
+                  NSInteger end = [input offsetFromPosition:input.beginningOfDocument toPosition:selection.end];
+                  if (start < 0 || end < start || (NSUInteger)start != range.location ||
+                      (NSUInteger)(end - start) != range.length) {
+                    return;
+                  }
+                  onPress(actionId, text, range);
+                }];
+    [actions addObject:action];
+  }
+  if (actions.count == 0) {
+    return nil;
+  }
+
+  NSMutableArray<UIMenuElement *> *children = [suggestedActions mutableCopy];
+  // Group our actions without changing the system's menu hierarchy or labels.
+  [children addObject:[UIMenu menuWithTitle:@""
+                                      image:nil
+                                 identifier:nil
+                                    options:UIMenuOptionsDisplayInline
+                                   children:actions]];
+  return [UIMenu menuWithTitle:@"" children:children];
+}
+#endif

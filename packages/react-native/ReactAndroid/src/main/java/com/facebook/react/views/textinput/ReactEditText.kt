@@ -143,6 +143,36 @@ public open class ReactEditText public constructor(context: Context) : AppCompat
 
   private var autoFocus = false
   private var contextMenuHidden = false
+  internal val editMenu =
+      ReactTextInputEditMenu(
+          this,
+          isAllowed = {
+            val inputClass = inputType and InputType.TYPE_MASK_CLASS
+            val variation = inputType and InputType.TYPE_MASK_VARIATION
+            val isPassword =
+                transformationMethod is android.text.method.PasswordTransformationMethod ||
+                    (inputClass == InputType.TYPE_CLASS_TEXT &&
+                        (variation == InputType.TYPE_TEXT_VARIATION_PASSWORD ||
+                            variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
+                            variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD)) ||
+                    (inputClass == InputType.TYPE_CLASS_NUMBER &&
+                        variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD)
+            !contextMenuHidden && isEnabled && !isPassword
+          },
+          onPress = { actionId, text, start, end ->
+            eventDispatcher?.dispatchEvent(
+                ReactTextInputEditMenuItemPressEvent(
+                    UIManagerHelper.getSurfaceId(this),
+                    id,
+                    actionId,
+                    text,
+                    start,
+                    end,
+                    nativeEventCount,
+                ),
+            )
+          },
+      )
   private var didAttachToWindow = false
   private var selectTextOnFocus = false
   private var placeholder: String? = null
@@ -274,17 +304,29 @@ public open class ReactEditText public constructor(context: Context) : AppCompat
             // EditText behavior.
             showSoftKeyboardIfEditable()
             menu.removeItem(android.R.id.pasteAsPlainText)
+            editMenu.prepare(mode, menu)
             return true
           }
 
-          override fun onPrepareActionMode(mode: ActionMode, menu: Menu): Boolean = true
+          override fun onPrepareActionMode(mode: ActionMode, menu: Menu): Boolean {
+            editMenu.prepare(mode, menu)
+            return true
+          }
 
-          override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean = false
+          override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean =
+              editMenu.onActionItemClicked(mode, item)
 
-          override fun onDestroyActionMode(mode: ActionMode) = Unit
+          override fun onDestroyActionMode(mode: ActionMode) {
+            editMenu.onDestroyActionMode(mode)
+          }
         }
     customSelectionActionModeCallback = customActionModeCallback
     customInsertionActionModeCallback = customActionModeCallback
+  }
+
+  override fun onDetachedFromWindow() {
+    editMenu.detach()
+    super.onDetachedFromWindow()
   }
 
   @SuppressLint("ClassImplementsFinalize")

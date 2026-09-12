@@ -2616,6 +2616,7 @@ protocol RCTBackedTextInputDelegate : public NSObject {
   public virtual BOOL textInputShouldReturn();
   public virtual BOOL textInputShouldSubmitOnReturn();
   public virtual NSString* textInputShouldChangeText:inRange:(NSString* text, NSRange range);
+  public virtual _Nullable UIMenu* textInput:editMenuForCharactersInRange:suggestedActions:(UIView<RCTBackedTextInputViewProtocol>* textInput, NSRange range, NSArray<UIMenuElement*>* suggestedActions);
   public virtual void scrollViewDidScroll:(UIScrollView* scrollView);
   public virtual void textInputDidBeginEditing();
   public virtual void textInputDidChange();
@@ -3767,6 +3768,7 @@ folly::dynamic facebook::react::convertIdToFollyDynamic(id json);
 folly::dynamic facebook::react::diffDynamicProps(const folly::dynamic& oldProps, const folly::dynamic& newProps);
 folly::dynamic facebook::react::mergeDynamicProps(const folly::dynamic& source, const folly::dynamic& patch, facebook::react::NullValueStrategy nullValueStrategy);
 folly::dynamic facebook::react::toDynamic(const facebook::react::SubmitBehavior& value);
+folly::dynamic facebook::react::toDynamic(const facebook::react::TextInputEditMenuItem& value);
 id facebook::react::convertFollyDynamicToId(const folly::dynamic& dyn);
 int facebook::react::toInt(const facebook::react::DisplayType& displayType);
 int facebook::react::toInt(const facebook::react::LayoutDirection& layoutDirection);
@@ -3944,6 +3946,7 @@ void facebook::react::fromRawValue(const facebook::react::PropsParserContext& co
 void facebook::react::fromRawValue(const facebook::react::PropsParserContext& context, const facebook::react::RawValue& value, facebook::react::TextDecorationLineType& result);
 void facebook::react::fromRawValue(const facebook::react::PropsParserContext& context, const facebook::react::RawValue& value, facebook::react::TextDecorationStyle& result);
 void facebook::react::fromRawValue(const facebook::react::PropsParserContext& context, const facebook::react::RawValue& value, facebook::react::TextInputAccessoryVisibilityMode& result);
+void facebook::react::fromRawValue(const facebook::react::PropsParserContext& context, const facebook::react::RawValue& value, facebook::react::TextInputEditMenuItem& result);
 void facebook::react::fromRawValue(const facebook::react::PropsParserContext& context, const facebook::react::RawValue& value, facebook::react::TextTransform& result);
 void facebook::react::fromRawValue(const facebook::react::PropsParserContext& context, const facebook::react::RawValue& value, facebook::react::Transform& result);
 void facebook::react::fromRawValue(const facebook::react::PropsParserContext& context, const facebook::react::RawValue& value, facebook::react::TransformOrigin& result);
@@ -4381,6 +4384,7 @@ class facebook::react::BaseTextInputProps : public facebook::react::HostPlatform
   public std::string defaultValue;
   public std::string placeholder;
   public std::string text;
+  public std::vector<facebook::react::TextInputEditMenuItem> editMenuItems;
   public void setProp(const facebook::react::PropsParserContext& context, facebook::react::RawPropsPropNameHash hash, const char* propName, const facebook::react::RawValue& value);
 }
 
@@ -7277,6 +7281,7 @@ class facebook::react::TextInputEventEmitter : public facebook::react::BaseViewE
   public void onBlur(const facebook::react::TextInputEventEmitter::Metrics& textInputMetrics) const;
   public void onChange(const facebook::react::TextInputEventEmitter::Metrics& textInputMetrics) const;
   public void onContentSizeChange(const facebook::react::TextInputEventEmitter::Metrics& textInputMetrics) const;
+  public void onEditMenuItemPress(const std::string& id, const facebook::react::TextInputEventEmitter::Metrics& textInputMetrics) const;
   public void onEndEditing(const facebook::react::TextInputEventEmitter::Metrics& textInputMetrics) const;
   public void onFocus(const facebook::react::TextInputEventEmitter::Metrics& textInputMetrics) const;
   public void onKeyPress(const facebook::react::TextInputEventEmitter::KeyPressMetrics& keyPressMetrics) const;
@@ -10138,6 +10143,12 @@ struct facebook::react::TextEffectInfo {
   public bool operator==(const facebook::react::TextEffectInfo&) const = default;
   public folly::dynamic props;
   public std::string name;
+}
+
+struct facebook::react::TextInputEditMenuItem {
+  public bool operator==(const facebook::react::TextInputEditMenuItem& other) const = default;
+  public std::string id;
+  public std::string title;
 }
 
 struct facebook::react::TextLayoutContext {

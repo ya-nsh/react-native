@@ -142,7 +142,10 @@ public open class ReactTextInputManager public constructor() :
     val baseEventTypeConstants = super.getExportedCustomDirectEventTypeConstants()
     val eventTypeConstants = baseEventTypeConstants ?: mutableMapOf()
     eventTypeConstants.putAll(
-        mapOf(getJSEventName(ScrollEventType.SCROLL) to mapOf("registrationName" to "onScroll")),
+        mapOf(
+            getJSEventName(ScrollEventType.SCROLL) to mapOf("registrationName" to "onScroll"),
+            "topEditMenuItemPress" to mapOf("registrationName" to "onEditMenuItemPress"),
+        ),
     )
     return eventTypeConstants
   }
@@ -488,6 +491,32 @@ public open class ReactTextInputManager public constructor() :
       return
     }
     view.isCursorVisible = !caretHidden
+  }
+
+  @ReactProp(name = "editMenuItems")
+  public fun setEditMenuItems(view: ReactEditText, items: ReadableArray?) {
+    val result = mutableListOf<ReactTextInputEditMenu.Item>()
+    val ids = mutableSetOf<String>()
+    if (items != null) {
+      for (index in 0 until items.size()) {
+        if (items.getType(index) != ReadableType.Map) {
+          continue
+        }
+        val item = items.getMap(index) ?: continue
+        if (!item.hasKey("id") ||
+            item.getType("id") != ReadableType.String ||
+            !item.hasKey("title") ||
+            item.getType("title") != ReadableType.String) {
+          continue
+        }
+        val id = item.getString("id") ?: continue
+        val title = item.getString("title") ?: continue
+        if (id.isNotBlank() && title.isNotBlank() && ids.add(id)) {
+          result.add(ReactTextInputEditMenu.Item(id, title))
+        }
+      }
+    }
+    view.editMenu.items = result
   }
 
   @ReactProp(name = "contextMenuHidden", defaultBoolean = false)

@@ -28,6 +28,7 @@ import {
   colorAttribute,
   fontVariationSettingsAttribute,
 } from '../View/ReactNativeStyleAttributes';
+import processEditMenuItems from './processEditMenuItems';
 
 export type KeyboardType =
   // Cross Platform
@@ -600,6 +601,17 @@ export type AndroidTextInputNativeProps = Readonly<{
    */
   contextMenuHidden?: ?boolean,
 
+  editMenuItems?: ?ReadonlyArray<Readonly<{id: string, title: string}>>,
+  onEditMenuItemPress?: ?DirectEventHandler<
+    Readonly<{
+      id: string,
+      text: string,
+      selection: Readonly<{start: Int32, end: Int32}>,
+      eventCount: Int32,
+      target: Int32,
+    }>,
+  >,
+
   /**
    * The following are props that `BaseTextShadowNode` takes. It is unclear if they
    * are used by TextInput.
@@ -664,6 +676,9 @@ export const __INTERNAL_VIEW_CONFIG: PartialViewConfig = {
     },
   },
   directEventTypes: {
+    topEditMenuItemPress: {
+      registrationName: 'onEditMenuItemPress',
+    },
     topScroll: {
       registrationName: 'onScroll',
     },
@@ -677,6 +692,7 @@ export const __INTERNAL_VIEW_CONFIG: PartialViewConfig = {
     placeholder: true,
     inlineImagePadding: true,
     contextMenuHidden: true,
+    editMenuItems: {process: processEditMenuItems},
     textShadowColor: colorAttribute,
     maxLength: true,
     selectTextOnFocus: true,
@@ -721,6 +737,7 @@ export const __INTERNAL_VIEW_CONFIG: PartialViewConfig = {
     fontVariationSettings: fontVariationSettingsAttribute,
     allowFontScaling: true,
     onSelectionChange: true,
+    onEditMenuItemPress: true,
     mostRecentEventCount: true,
     inlineImageLeft: true,
     editable: true,

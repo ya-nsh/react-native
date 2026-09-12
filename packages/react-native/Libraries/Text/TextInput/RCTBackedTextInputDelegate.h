@@ -39,6 +39,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 @optional
 
+#if !TARGET_OS_TV
+- (nullable UIMenu *)textInput:(UIView<RCTBackedTextInputViewProtocol> *)textInput
+    editMenuForCharactersInRange:(NSRange)range
+                suggestedActions:(NSArray<UIMenuElement *> *)suggestedActions API_AVAILABLE(ios(16.0));
+#endif
+
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView;
 
 @end
